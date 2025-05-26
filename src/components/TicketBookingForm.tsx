@@ -38,6 +38,21 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
     // Here you would integrate with actual booking APIs
   };
 
+  const getTicketTypeColor = (type: string, isActive: boolean) => {
+    if (!isActive) return 'bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600';
+    
+    switch (type) {
+      case 'blue':
+        return 'bg-blue-500/20 border-blue-500 text-blue-400';
+      case 'green':
+        return 'bg-green-500/20 border-green-500 text-green-400';
+      case 'purple':
+        return 'bg-purple-500/20 border-purple-500 text-purple-400';
+      default:
+        return 'bg-cyan-500/20 border-cyan-500 text-cyan-400';
+    }
+  };
+
   return (
     <div className="p-6 h-full overflow-y-auto">
       <motion.div
@@ -58,11 +73,7 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
         {ticketTypes.map((type, index) => (
           <motion.button
             key={type.id}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              ticketType === type.id
-                ? `bg-${type.color}-500/20 border-${type.color}-500 text-${type.color}-400`
-                : 'bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600'
-            }`}
+            className={`p-4 rounded-lg border-2 transition-all ${getTicketTypeColor(type.color, ticketType === type.id)}`}
             onClick={() => setTicketType(type.id as any)}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
