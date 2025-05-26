@@ -53,6 +53,19 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
     }
   };
 
+  const getCurrentTicketType = () => {
+    return ticketTypes.find(t => t.id === ticketType);
+  };
+
+  const getBookingTitle = () => {
+    const currentType = getCurrentTicketType();
+    if (language === 'en') {
+      return `${ticketType.charAt(0).toUpperCase() + ticketType.slice(1)} Booking`;
+    } else {
+      return `${currentType?.label} బుకింగ్`;
+    }
+  };
+
   return (
     <div className="p-6 h-full overflow-y-auto">
       <motion.div
@@ -69,21 +82,24 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
       </motion.div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        {ticketTypes.map((type, index) => (
-          <motion.button
-            key={type.id}
-            className={`p-4 rounded-lg border-2 transition-all ${getTicketTypeColor(type.color, ticketType === type.id)}`}
-            onClick={() => setTicketType(type.id as any)}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <type.icon className="w-8 h-8 mx-auto mb-2" />
-            <p className="font-semibold">{type.label}</p>
-          </motion.button>
-        ))}
+        {ticketTypes.map((type, index) => {
+          const IconComponent = type.icon;
+          return (
+            <motion.button
+              key={type.id}
+              className={`p-4 rounded-lg border-2 transition-all ${getTicketTypeColor(type.color, ticketType === type.id)}`}
+              onClick={() => setTicketType(type.id as any)}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <IconComponent className="w-8 h-8 mx-auto mb-2" />
+              <p className="font-semibold">{type.label}</p>
+            </motion.button>
+          );
+        })}
       </div>
 
       <motion.div
@@ -94,12 +110,15 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
         <Card className="bg-gray-800/30 border-gray-700/50">
           <CardHeader>
             <CardTitle className="text-white flex items-center space-x-2">
-              {ticketTypes.find(t => t.id === ticketType)?.icon && (
-                <ticketTypes.find(t => t.id === ticketType)!.icon className="w-6 h-6" />
-              )}
-              <span>
-                {language === 'en' ? `${ticketType.charAt(0).toUpperCase() + ticketType.slice(1)} Booking` : `${ticketTypes.find(t => t.id === ticketType)?.label} బుకింగ్`}
-              </span>
+              {(() => {
+                const currentType = getCurrentTicketType();
+                if (currentType) {
+                  const IconComponent = currentType.icon;
+                  return <IconComponent className="w-6 h-6" />;
+                }
+                return null;
+              })()}
+              <span>{getBookingTitle()}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
