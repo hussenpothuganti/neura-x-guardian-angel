@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Train, Bus, Film, Calendar, Users, MapPin } from 'lucide-react';
@@ -6,12 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import VoiceCommandButton from './VoiceCommandButton';
+import { useToast } from '@/components/ui/use-toast';
 
 interface TicketBookingFormProps {
   language: string;
 }
 
 const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
+  const { toast } = useToast();
   const [ticketType, setTicketType] = useState<'train' | 'bus' | 'movie'>('train');
   const [formData, setFormData] = useState({
     from: '',
@@ -21,6 +24,59 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
     movie: '',
     theater: '',
     showtime: ''
+  });
+
+  const voiceCommands = [
+    'book train', 'book bus', 'book movie',
+    'train booking', 'bus booking', 'movie booking',
+    'from', 'to', 'destination', 'passengers', 'date'
+  ];
+
+  const handleVoiceCommand = (command: string, transcript: string) => {
+    console.log('Voice command received:', command, transcript);
+    
+    if (transcript.includes('train')) {
+      setTicketType('train');
+      toast({
+        title: language === 'en' ? 'Voice Command' : 'వాయిస్ కమాండ్',
+        description: language === 'en' ? 'Switched to train booking' : 'రైలు బుకింగ్‌కు మార్చబడింది'
+      });
+    } else if (transcript.includes('bus')) {
+      setTicketType('bus');
+      toast({
+        title: language === 'en' ? 'Voice Command' : 'వాయిస్ కమాండ్',
+        description: language === 'en' ? 'Switched to bus booking' : 'బస్ బుకింగ్‌కు మార్చబడింది'
+      });
+    } else if (transcript.includes('movie')) {
+      setTicketType('movie');
+      toast({
+        title: language === 'en' ? 'Voice Command' : 'వాయిస్ కమాండ్',
+        description: language === 'en' ? 'Switched to movie booking' : 'సినిమా బుకింగ్‌కు మార్చబడింది'
+      });
+    }
+
+    // Extract city names for from/to fields
+    if (transcript.includes('from')) {
+      const words = transcript.split(' ');
+      const fromIndex = words.findIndex(word => word.includes('from'));
+      if (fromIndex !== -1 && words[fromIndex + 1]) {
+        setFormData(prev => ({ ...prev, from: words[fromIndex + 1] }));
+      }
+    }
+
+    if (transcript.includes('to') || transcript.includes('destination')) {
+      const words = transcript.split(' ');
+      const toIndex = words.findIndex(word => word.includes('to') || word.includes('destination'));
+      if (toIndex !== -1 && words[toIndex + 1]) {
+        setFormData(prev => ({ ...prev, to: words[toIndex + 1] }));
+      }
+    }
+  };
+
+  const { isListening, startListening, stopListening, isSupported } = useVoiceCommands({
+    onCommand: handleVoiceCommand,
+    commands: voiceCommands,
+    language: language === 'en' ? 'en-US' : 'te-IN'
   });
 
   const ticketTypes = [
@@ -35,7 +91,10 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
 
   const handleBooking = () => {
     console.log('Booking:', { type: ticketType, ...formData });
-    // Here you would integrate with actual booking APIs
+    toast({
+      title: language === 'en' ? 'Booking Confirmed' : 'బుకింగ్ ధృవీకరించబడింది',
+      description: language === 'en' ? 'Your ticket has been booked successfully!' : 'మీ టికెట్ విజయవంతంగా బుక్ చేయబడింది!'
+    });
   };
 
   const getTicketTypeColor = (type: string, isActive: boolean) => {
@@ -73,12 +132,27 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-2">
-          {language === 'en' ? 'Ticket Booking' : 'టికెట్ బుకింగ్'}
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            {language === 'en' ? 'Ticket Booking' : 'టికెట్ బుకింగ్'}
+          </h2>
+          <VoiceCommandButton
+            isListening={isListening}
+            onToggle={isListening ? stopListening : startListening}
+            isSupported={isSupported}
+          />
+        </div>
         <p className="text-gray-400">
           {language === 'en' ? 'Book your travel tickets with AI assistance' : 'AI సహాయంతో మీ ప్రయాణ టికెట్లను బుక్ చేయండి'}
         </p>
+        {isSupported && (
+          <p className="text-sm text-cyan-400 mt-1">
+            {language === 'en' 
+              ? `Voice commands: Say "train", "bus", or "movie" to switch booking types`
+              : `వాయిస్ కమాండ్లు: బుకింగ్ రకాలను మార్చడానికి "రైలు", "బస్సు", లేదా "సినిమా" అని చెప్పండి`
+            }
+          </p>
+        )}
       </motion.div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">

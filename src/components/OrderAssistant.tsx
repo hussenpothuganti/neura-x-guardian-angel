@@ -5,6 +5,9 @@ import { Search, ShoppingCart, Star, Heart, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import VoiceCommandButton from './VoiceCommandButton';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Product {
   id: string;
@@ -23,6 +26,7 @@ interface OrderAssistantProps {
 }
 
 const OrderAssistant = ({ language }: OrderAssistantProps) => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [products] = useState<Product[]>([
     {
@@ -73,14 +77,59 @@ const OrderAssistant = ({ language }: OrderAssistantProps) => {
 
   const [filteredProducts, setFilteredProducts] = useState(products);
 
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
+  const voiceCommands = [
+    'search', 'find', 'order', 'buy', 'add to cart',
+    'iphone', 'samsung', 'macbook', 'headphones',
+    'phone', 'laptop', 'computer'
+  ];
+
+  const handleVoiceCommand = (command: string, transcript: string) => {
+    console.log('Voice command received:', command, transcript);
+    
+    // Extract search terms from voice commands
+    if (transcript.includes('search') || transcript.includes('find')) {
+      const searchTerms = transcript.replace(/search|find|for/g, '').trim();
+      if (searchTerms) {
+        setSearchQuery(searchTerms);
+        handleSearch(searchTerms);
+        toast({
+          title: language === 'en' ? 'Voice Search' : 'వాయిస్ వెతకండి',
+          description: language === 'en' ? `Searching for: ${searchTerms}` : `వెతుకుతోంది: ${searchTerms}`
+        });
+      }
+    }
+
+    // Direct product searches
+    if (transcript.includes('iphone') || transcript.includes('phone')) {
+      setSearchQuery('iPhone');
+      handleSearch('iPhone');
+    } else if (transcript.includes('samsung')) {
+      setSearchQuery('Samsung');
+      handleSearch('Samsung');
+    } else if (transcript.includes('macbook') || transcript.includes('laptop')) {
+      setSearchQuery('MacBook');
+      handleSearch('MacBook');
+    } else if (transcript.includes('headphones')) {
+      setSearchQuery('headphones');
+      handleSearch('headphones');
+    }
+  };
+
+  const { isListening, startListening, stopListening, isSupported } = useVoiceCommands({
+    onCommand: handleVoiceCommand,
+    commands: voiceCommands,
+    language: language === 'en' ? 'en-US' : 'te-IN'
+  });
+
+  const handleSearch = (query?: string) => {
+    const searchTerm = query || searchQuery;
+    if (!searchTerm.trim()) {
       setFilteredProducts(products);
       return;
     }
     
     const filtered = products.filter(product =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredProducts(filtered);
   };
@@ -93,6 +142,13 @@ const OrderAssistant = ({ language }: OrderAssistantProps) => {
     }).format(price);
   };
 
+  const handleOrder = (product: Product) => {
+    toast({
+      title: language === 'en' ? 'Order Placed' : 'ఆర్డర్ ఇవ్వబడింది',
+      description: language === 'en' ? `Ordered: ${product.name}` : `ఆర్డర్ చేయబడింది: ${product.name}`
+    });
+  };
+
   return (
     <div className="p-6 h-full overflow-y-auto">
       <motion.div
@@ -100,12 +156,27 @@ const OrderAssistant = ({ language }: OrderAssistantProps) => {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-2">
-          {language === 'en' ? 'AI Shopping Assistant' : 'AI షాపింగ్ అసిస్టెంట్'}
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            {language === 'en' ? 'AI Shopping Assistant' : 'AI షాపింగ్ అసిస్టెంట్'}
+          </h2>
+          <VoiceCommandButton
+            isListening={isListening}
+            onToggle={isListening ? stopListening : startListening}
+            isSupported={isSupported}
+          />
+        </div>
         <p className="text-gray-400">
           {language === 'en' ? 'Find and order products from Flipkart & Amazon' : 'Flipkart & Amazon నుండి ఉత్పాదనలను కనుగొని ఆర్డర్ చేయండి'}
         </p>
+        {isSupported && (
+          <p className="text-sm text-cyan-400 mt-1">
+            {language === 'en' 
+              ? `Voice commands: Say "search iPhone", "find laptop", or "order headphones"`
+              : `వాయిస్ కమాండ్లు: "iPhone వెతకండి", "లాప్‌టాప్ కనుగొనండి", లేదా "హెడ్‌ఫోన్లు ఆర్డర్ చేయండి" అని చెప్పండి`
+            }
+          </p>
+        )}
       </motion.div>
 
       {/* Search Bar */}
@@ -126,7 +197,7 @@ const OrderAssistant = ({ language }: OrderAssistantProps) => {
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
         </div>
         <Button
-          onClick={handleSearch}
+          onClick={() => handleSearch()}
           className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
         >
           {language === 'en' ? 'Search' : 'వెతకండి'}
@@ -186,7 +257,10 @@ const OrderAssistant = ({ language }: OrderAssistantProps) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                      <Button 
+                        onClick={() => handleOrder(product)}
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+                      >
                         <ShoppingCart className="w-4 h-4 mr-2" />
                         {language === 'en' ? 'Order Now' : 'ఇప్పుడే ఆర్డర్ చేయండి'}
                       </Button>
