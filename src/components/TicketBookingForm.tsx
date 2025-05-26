@@ -68,7 +68,6 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
         </p>
       </motion.div>
 
-      {/* Ticket Type Selection */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {ticketTypes.map((type, index) => (
           <motion.button
@@ -87,7 +86,6 @@ const TicketBookingForm = ({ language }: TicketBookingFormProps) => {
         ))}
       </div>
 
-      {/* Booking Form */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
